@@ -1,0 +1,16 @@
+Proximity(point,cluster):
+    mark point as processed
+    add point to cluster
+    nearby points = tree(point)
+    Iterate through each nearby point
+        If point has not been processed
+            Proximity(cluster)
+
+EuclideanCluster():
+    list of clusters 
+    Iterate through each point
+        If point has not been processed
+            Create cluster
+            Proximity(point, cluster)
+            cluster add clusters
+    return clusters
