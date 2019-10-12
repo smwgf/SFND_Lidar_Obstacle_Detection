@@ -45,8 +45,8 @@ typename pcl::PointCloud<PointT>::Ptr ProcessPointClouds<PointT>::FilterCloud(ty
     pcl::CropBox<PointT> egoFilter;
     
     std::vector<int> indices;
-    egoFilter.setMin(Eigen::Vector4f(-2,-2,-1,1));
-    egoFilter.setMax(Eigen::Vector4f(2.6,2,-0.4,1));
+    egoFilter.setMin(Eigen::Vector4f(-1.5,-1.7,-1,1));
+    egoFilter.setMax(Eigen::Vector4f(2.6,1.7,-0.4,1));
     egoFilter.setInputCloud(cloud_crop_filtered);
     egoFilter.filter(indices);
 
