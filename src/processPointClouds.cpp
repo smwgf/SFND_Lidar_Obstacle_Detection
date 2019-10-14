@@ -1,7 +1,7 @@
 // PCL lib Functions for processing point clouds 
 
 #include "processPointClouds.h"
-//#define USE_PCL
+#define USE_PCL
 //constructor:
 template<typename PointT>
 ProcessPointClouds<PointT>::ProcessPointClouds() {}

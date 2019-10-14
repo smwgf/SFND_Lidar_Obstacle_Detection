@@ -141,6 +141,7 @@ struct KdTree
 	template<typename PointT>
 	void InsertPointCloud(typename pcl::PointCloud<PointT>::Ptr cloud)
 	{
+		std::random_shuffle(cloud->points.begin(),cloud->points.end());
 		for(int i =0; i < cloud->size();i++)
 		{
 			auto d = cloud->points[i];
