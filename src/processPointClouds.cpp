@@ -19,7 +19,6 @@ void ProcessPointClouds<PointT>::numPoints(typename pcl::PointCloud<PointT>::Ptr
     std::cout << cloud->points.size() << std::endl;
 }
 
-
 template<typename PointT>
 typename pcl::PointCloud<PointT>::Ptr ProcessPointClouds<PointT>::FilterCloud(typename pcl::PointCloud<PointT>::Ptr cloud, float filterRes, Eigen::Vector4f minPoint, Eigen::Vector4f maxPoint)
 {
@@ -91,7 +90,31 @@ std::pair<typename pcl::PointCloud<PointT>::Ptr, typename pcl::PointCloud<PointT
     return segResult;
 }
 
+///*
+template<typename PointT>
+std::pair<typename pcl::PointCloud<PointT>::Ptr, typename pcl::PointCloud<PointT>::Ptr> ProcessPointClouds<PointT>::SegmentPlane(typename pcl::PointCloud<PointT>::Ptr cloud, int maxIterations, float distanceThreshold)
+{
+    // Time segmentation process
+    auto startTime = std::chrono::steady_clock::now();
+	pcl::PointIndices::Ptr inliers(new pcl::PointIndices());
+    // TODO:: Fill in this function to find inliers for the cloud.
+    // Create the segmentation object
+ 
+    inliers->indices = Ransac3DPlane(cloud,maxIterations,distanceThreshold);
 
+    if(inliers->indices.size()==0)
+    {
+        std::cerr << "Could not estimate a planner model for the given dataset." <<std::endl;        
+    }
+    auto endTime = std::chrono::steady_clock::now();
+    auto elapsedTime = std::chrono::duration_cast<std::chrono::milliseconds>(endTime - startTime);
+    std::cout << "plane segmentation took " << elapsedTime.count() << " milliseconds" << std::endl;
+
+    std::pair<typename pcl::PointCloud<PointT>::Ptr, typename pcl::PointCloud<PointT>::Ptr> segResult = SeparateClouds(inliers,cloud);
+    return segResult;
+}
+//*/
+/*
 template<typename PointT>
 std::pair<typename pcl::PointCloud<PointT>::Ptr, typename pcl::PointCloud<PointT>::Ptr> ProcessPointClouds<PointT>::SegmentPlane(typename pcl::PointCloud<PointT>::Ptr cloud, int maxIterations, float distanceThreshold)
 {
@@ -120,8 +143,7 @@ std::pair<typename pcl::PointCloud<PointT>::Ptr, typename pcl::PointCloud<PointT
     std::pair<typename pcl::PointCloud<PointT>::Ptr, typename pcl::PointCloud<PointT>::Ptr> segResult = SeparateClouds(inliers,cloud);
     return segResult;
 }
-
-
+*/
 template<typename PointT>
 std::vector<typename pcl::PointCloud<PointT>::Ptr> ProcessPointClouds<PointT>::Clustering(typename pcl::PointCloud<PointT>::Ptr cloud, float clusterTolerance, int minSize, int maxSize)
 {
@@ -220,4 +242,78 @@ std::vector<boost::filesystem::path> ProcessPointClouds<PointT>::streamPcd(std::
 
     return paths;
 
+}
+
+template<typename PointT>
+std::vector<int> ProcessPointClouds<PointT>::Ransac3DPlane(typename pcl::PointCloud<PointT>::Ptr cloud, int maxIterations, float distanceTol)
+{
+	std::vector<int> inliersResult;
+	srand(time(NULL));
+	
+	// TODO: Fill in this function
+
+	
+	std::vector<int>* mostInlier (new std::vector<int>());
+	
+
+	// For max iterations 
+	for(int i =0 ; i<maxIterations;i++)
+	{
+		std::vector<int>* currentInlier (new std::vector<int>());
+		// Randomly sample subset and fit line
+		int index1 = rand()%cloud->size();
+		int index2, index3;
+		do{
+			index2 = rand()%cloud->size();
+		}
+		while(index1==index2);
+		do{
+			index3 = rand()%cloud->size();
+		}
+		while(index1==index3||index2==index3);
+		
+		float x1 =cloud->points[index1].x;
+		float x2 =cloud->points[index2].x;
+		float x3 =cloud->points[index3].x;
+		float y1 =cloud->points[index1].y;
+		float y2 =cloud->points[index2].y;
+		float y3 =cloud->points[index3].y;
+		float z1 =cloud->points[index1].z;
+		float z2 =cloud->points[index2].z;
+		float z3 =cloud->points[index3].z;
+		float A = (y2-y1)*(z3-z1)-(z2-z1)*(y3-y1);
+		float B = (z2-z1)*(x3-x1)-(x2-x1)*(z3-z1);
+		float C = (x2-x1)*(y3-y1)-(y2-y1)*(x3-x1);
+		float D = - A*x1 - B*y1 - C*z1;
+		float sqrA = A*A;
+		float sqrB = B*B;
+		float sqrC = C*C;
+
+		// Measure distance between every point and fitted line
+		for(int j=0 ; j <cloud->size();j++)
+		{			
+			float x =cloud->points[j].x;
+			float y =cloud->points[j].y;
+			float z =cloud->points[j].z;
+			float d = fabs(A*x+B*y+C*z +D)/sqrt(sqrA+sqrB+sqrC);
+			// If distance is smaller than threshold count it as inlier
+			if(d<distanceTol)
+			{
+				currentInlier->push_back(j);
+			}			
+		}
+		if(mostInlier->size()<currentInlier->size())
+		{
+			delete mostInlier;
+			mostInlier=currentInlier;
+		}
+		else
+		{
+			delete currentInlier;
+		}
+		
+
+	}
+	// Return indicies of inliers from fitted line with most inliers
+	return *mostInlier;
 }
