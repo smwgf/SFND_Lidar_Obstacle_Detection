@@ -18,6 +18,7 @@
 #include <ctime>
 #include <chrono>
 #include "render/box.h"
+#include "kdtree.h"
 
 template<typename PointT>
 class ProcessPointClouds {
@@ -29,6 +30,10 @@ public:
     ~ProcessPointClouds();
 
     std::vector<int> Ransac3DPlane(typename pcl::PointCloud<PointT>::Ptr cloud, int maxIterations, float distanceTol);
+
+    void proximity(std::vector<bool>& processed,typename pcl::PointCloud<PointT>::Ptr cloud,int id,std::vector<int>& cluster,KdTree* tree, float distanceTol);
+
+    std::vector<std::vector<int>> euclideanCluster(typename pcl::PointCloud<PointT>::Ptr points, KdTree* tree, float distanceTol);
     
     void numPoints(typename pcl::PointCloud<PointT>::Ptr cloud);
 

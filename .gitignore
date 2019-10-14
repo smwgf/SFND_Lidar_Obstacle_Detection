@@ -2,3 +2,5 @@ build/
 
 src/quiz/ransac/build
 src/quiz/cluster/build
+
+configgit.sh
