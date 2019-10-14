@@ -1,7 +1,7 @@
 // PCL lib Functions for processing point clouds 
 
 #include "processPointClouds.h"
-
+//#define USE_PCL
 //constructor:
 template<typename PointT>
 ProcessPointClouds<PointT>::ProcessPointClouds() {}
@@ -89,31 +89,7 @@ std::pair<typename pcl::PointCloud<PointT>::Ptr, typename pcl::PointCloud<PointT
     return segResult;
 }
 
-///*
-template<typename PointT>
-std::pair<typename pcl::PointCloud<PointT>::Ptr, typename pcl::PointCloud<PointT>::Ptr> ProcessPointClouds<PointT>::SegmentPlane(typename pcl::PointCloud<PointT>::Ptr cloud, int maxIterations, float distanceThreshold)
-{
-    // Time segmentation process
-    auto startTime = std::chrono::steady_clock::now();
-	pcl::PointIndices::Ptr inliers(new pcl::PointIndices());
-    // TODO:: Fill in this function to find inliers for the cloud.
-    // Create the segmentation object
- 
-    inliers->indices = Ransac3DPlane(cloud,maxIterations,distanceThreshold);
-
-    if(inliers->indices.size()==0)
-    {
-        std::cerr << "Could not estimate a planner model for the given dataset." <<std::endl;        
-    }
-    auto endTime = std::chrono::steady_clock::now();
-    auto elapsedTime = std::chrono::duration_cast<std::chrono::milliseconds>(endTime - startTime);
-    std::cout << "plane segmentation took " << elapsedTime.count() << " milliseconds" << std::endl;
-
-    std::pair<typename pcl::PointCloud<PointT>::Ptr, typename pcl::PointCloud<PointT>::Ptr> segResult = SeparateClouds(inliers,cloud);
-    return segResult;
-}
-//*/
-/*
+#ifdef USE_PCL
 template<typename PointT>
 std::pair<typename pcl::PointCloud<PointT>::Ptr, typename pcl::PointCloud<PointT>::Ptr> ProcessPointClouds<PointT>::SegmentPlane(typename pcl::PointCloud<PointT>::Ptr cloud, int maxIterations, float distanceThreshold)
 {
@@ -142,39 +118,32 @@ std::pair<typename pcl::PointCloud<PointT>::Ptr, typename pcl::PointCloud<PointT
     std::pair<typename pcl::PointCloud<PointT>::Ptr, typename pcl::PointCloud<PointT>::Ptr> segResult = SeparateClouds(inliers,cloud);
     return segResult;
 }
-*/
+#else
 template<typename PointT>
-std::vector<typename pcl::PointCloud<PointT>::Ptr> ProcessPointClouds<PointT>::Clustering(typename pcl::PointCloud<PointT>::Ptr cloud, float clusterTolerance, int minSize, int maxSize)
+std::pair<typename pcl::PointCloud<PointT>::Ptr, typename pcl::PointCloud<PointT>::Ptr> ProcessPointClouds<PointT>::SegmentPlane(typename pcl::PointCloud<PointT>::Ptr cloud, int maxIterations, float distanceThreshold)
 {
-    // Time clustering process
+    // Time segmentation process
     auto startTime = std::chrono::steady_clock::now();
+	pcl::PointIndices::Ptr inliers(new pcl::PointIndices());
+    // TODO:: Fill in this function to find inliers for the cloud.
+    // Create the segmentation object
+ 
+    inliers->indices = Ransac3DPlane(cloud,maxIterations,distanceThreshold);
 
-    std::vector<typename pcl::PointCloud<PointT>::Ptr> clusters;
-
-    // TODO:: Fill in the function to perform euclidean clustering to group detected obstacles
-
-	KdTree* kdtree = new KdTree;
-  
-    kdtree->InsertPointCloud<PointT>(cloud);
-
-    std::vector<std::vector<int>> cluster_indices = euclideanCluster(cloud,kdtree,clusterTolerance);
-
-    for (std::vector<int> indice : cluster_indices)
+    if(inliers->indices.size()==0)
     {
-        typename pcl::PointCloud<PointT>::Ptr cloud_cluster (new pcl::PointCloud<PointT>);
-        for (int i : indice)
-            cloud_cluster->points.push_back (cloud->points[i]); //*
-
-        clusters.push_back(cloud_cluster);
-    }  
-  
+        std::cerr << "Could not estimate a planner model for the given dataset." <<std::endl;        
+    }
     auto endTime = std::chrono::steady_clock::now();
     auto elapsedTime = std::chrono::duration_cast<std::chrono::milliseconds>(endTime - startTime);
-    std::cout << "clustering took " << elapsedTime.count() << " milliseconds and found " << clusters.size() << " clusters" << std::endl;
+    std::cout << "plane segmentation took " << elapsedTime.count() << " milliseconds" << std::endl;
 
-    return clusters;
+    std::pair<typename pcl::PointCloud<PointT>::Ptr, typename pcl::PointCloud<PointT>::Ptr> segResult = SeparateClouds(inliers,cloud);
+    return segResult;
 }
-/*
+#endif
+
+#ifdef USE_PCL
 template<typename PointT>
 std::vector<typename pcl::PointCloud<PointT>::Ptr> ProcessPointClouds<PointT>::Clustering(typename pcl::PointCloud<PointT>::Ptr cloud, float clusterTolerance, int minSize, int maxSize)
 {
@@ -214,7 +183,42 @@ std::vector<typename pcl::PointCloud<PointT>::Ptr> ProcessPointClouds<PointT>::C
 
     return clusters;
 }
-*/
+#else
+template<typename PointT>
+std::vector<typename pcl::PointCloud<PointT>::Ptr> ProcessPointClouds<PointT>::Clustering(typename pcl::PointCloud<PointT>::Ptr cloud, float clusterTolerance, int minSize, int maxSize)
+{
+    // Time clustering process
+    auto startTime = std::chrono::steady_clock::now();
+
+    std::vector<typename pcl::PointCloud<PointT>::Ptr> clusters;
+
+    // TODO:: Fill in the function to perform euclidean clustering to group detected obstacles
+
+	KdTree* kdtree = new KdTree;
+  
+    kdtree->InsertPointCloud<PointT>(cloud);
+
+    std::vector<std::vector<int>> cluster_indices = euclideanCluster(cloud,kdtree,clusterTolerance);
+
+    for (std::vector<int> indice : cluster_indices)
+    {        
+        if((indice.size()>minSize) && (indice.size()<maxSize))
+        {
+            typename pcl::PointCloud<PointT>::Ptr cloud_cluster (new pcl::PointCloud<PointT>);
+            for (int i : indice)
+                cloud_cluster->points.push_back (cloud->points[i]); //*
+
+            clusters.push_back(cloud_cluster);
+        }
+    }  
+  
+    auto endTime = std::chrono::steady_clock::now();
+    auto elapsedTime = std::chrono::duration_cast<std::chrono::milliseconds>(endTime - startTime);
+    std::cout << "clustering took " << elapsedTime.count() << " milliseconds and found " << clusters.size() << " clusters" << std::endl;
+
+    return clusters;
+}
+#endif
 
 template<typename PointT>
 Box ProcessPointClouds<PointT>::BoundingBox(typename pcl::PointCloud<PointT>::Ptr cluster)

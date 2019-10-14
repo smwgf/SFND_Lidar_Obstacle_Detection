@@ -58,14 +58,14 @@ struct KdTree
 		std::vector<int> ids;
 
 		// Time segmentation process
-		auto startTime = std::chrono::steady_clock::now();
+		//auto startTime = std::chrono::steady_clock::now();
 		//
 
 		searchHelper(ids,root,target,distanceTol,0);
 
-		auto endTime = std::chrono::steady_clock::now();
-		auto elapsedTime = std::chrono::duration_cast<std::chrono::microseconds>(endTime - startTime);
-		std::cout << "kd search took " << elapsedTime.count() << " microseconds" << std::endl;
+		//auto endTime = std::chrono::steady_clock::now();
+		//auto elapsedTime = std::chrono::duration_cast<std::chrono::microseconds>(endTime - startTime);
+		//std::cout << "kd search took " << elapsedTime.count() << " microseconds" << std::endl;
 
 		return ids;
 	}
